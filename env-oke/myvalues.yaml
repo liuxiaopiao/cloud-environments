@@ -1,12 +1,28 @@
 JXBasicAuth: admin:$apr1$a/HdTrV7$XYCGJWF9PdVwVVTvjMyaU/
 
+gc-previews:
+  cronjob:
+    enabled: true
+    schedule: "0 */3 * * *"
+  args:
+    - "gc"
+    - "previews"
+
+gc-activities:
+  cronjob:
+    enabled: true
+    schedule: "0/30 */3 * * *"
+  args:
+    - "gc"
+    - "activities"
+
 expose:
   Annotations:
     helm.sh/hook: post-install,post-upgrade
     helm.sh/hook-delete-policy: hook-succeeded
 
 cleanup:
-  Args:
+  Args: 
     - --cleanup
   Annotations:
     helm.sh/hook: pre-delete
@@ -16,29 +32,28 @@ docker-registry:
   service:
     annotations:
       fabric8.io/expose: "true"
+      fabric8.io/ingress.annotations: "kubernetes.io/ingress.class: nginx\nnginx.ingress.kubernetes.io/proxy-body-size: 2g"
   persistence:
     accessMode: 'ReadWriteOnce'
     enabled: true
     size: 100Gi
 
+kubernetes-dashboard:
+  serviceAnnotations:
+    fabric8.io/expose: "true"
+    fabric8.io/ingress.annotations: "kubernetes.io/ingress.class: nginx\nnginx.ingress.kubernetes.io/auth-type: basic\nnginx.ingress.kubernetes.io/auth-secret: jx-basic-auth"
+
 nexus:
   service:
     annotations:
       fabric8.io/expose: "true"
-  persistence:
-    accessMode: 'ReadWriteOnce'
-    enabled: true
-    size: 50Gi
-
-kubernetes-dashboard:
-  serviceAnnotations:
-    fabric8.io/expose: "true"
-    fabric8.io/ingress.annotations: "nginx.ingress.kubernetes.io/auth-type: basic\nnginx.ingress.kubernetes.io/auth-secret: jx-basic-auth"
+      fabric8.io/ingress.annotations: "kubernetes.io/ingress.class: nginx"
 
 chartmuseum:
   service:
     annotations:
       fabric8.io/expose: "true"
+      fabric8.io/ingress.annotations: "kubernetes.io/ingress.class: nginx"
   persistence:
     Enabled: true
     AccessMode: ReadWriteOnce
@@ -73,7 +88,7 @@ monocular:
           fabric8.io/expose: "true"
           fabric8.io/ingress.name: "monocular"
           fabric8.io/ingress.path: "/api/"
-          fabric8.io/ingress.annotations: "nginx.ingress.kubernetes.io/rewrite-target: /\nnginx.ingress.kubernetes.io/ingress.class: nginx"
+          fabric8.io/ingress.annotations: "kubernetes.io/ingress.class: nginx\nnginx.ingress.kubernetes.io/rewrite-target: /\nnginx.ingress.kubernetes.io/ingress.class: nginx"
       config:
         repos:
           - name: chartmuseum
@@ -90,7 +105,7 @@ monocular:
           fabric8.io/expose: "true"
           fabric8.io/ingress.name: "monocular"
           fabric8.io/ingress.path: "/"
-    mongodb:
+	mongodb:
       global: {}
       image: bitnami/mongodb:3.4.9-r1
       persistence:
@@ -115,7 +130,7 @@ jenkins:
     # Image: "jenkinsci/jenkins"
     # ImageTag: "2.89"
     Image: "jenkinsxio/jenkinsx"
-    ImageTag: "0.0.20"
+    ImageTag: "0.0.25"
     ImagePullPolicy: "IfNotPresent"
     Component: "jenkins-master"
     UseSecurity: true
@@ -141,6 +156,7 @@ jenkins:
     ServiceAnnotations:
       #   service.beta.kubernetes.io/aws-load-balancer-backend-protocol: https
       fabric8.io/expose: "true"
+      fabric8.io/ingress.annotations: "kubernetes.io/ingress.class: nginx\nnginx.ingress.kubernetes.io/proxy-body-size: 500m"
   # Used to create Ingress record (should used with ServiceType: ClusterIP)
   # HostName: jenkins.cluster.local
   # NodePort: <to set explicitly, choose port between 30000-32767
@@ -171,12 +187,12 @@ jenkins:
   # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#taints-and-tolerations-beta-feature
     NodeSelector: {}
     Tolerations: {}
-
+  
     Ingress:
       Annotations:
         # kubernetes.io/ingress.class: nginx
         # kubernetes.io/tls-acme: "true"
-
+  
       TLS:
         # - secretName: jenkins.cluster.local
         #   hosts:
@@ -212,6 +228,11 @@ jenkins:
     #- Name: myname
     #  Url: https://something.com/
     #  Credential: some-cred-name
+
+    # global node properties
+    Global:
+      EnvVars:
+        DOCKER_REGISTRY: ""
 
   Agent:
     Enabled: true
@@ -256,7 +277,7 @@ jenkins:
             RequestMemory: "128Mi"
             Args: '${computer.jnlpmac} ${computer.name}'
           Maven:
-            Image: jenkinsxio/builder-maven:0.0.252
+            Image: jenkinsxio/builder-maven:0.0.310
             Privileged: true
             RequestCpu: "400m"
             RequestMemory: "512Mi"
@@ -297,7 +318,7 @@ jenkins:
             RequestMemory: "128Mi"
             Args: '${computer.jnlpmac} ${computer.name}'
           Gradle:
-            Image: jenkinsxio/builder-gradle:0.0.138
+            Image: jenkinsxio/builder-gradle:0.0.192
             Privileged: true
             RequestCpu: "400m"
             RequestMemory: "512Mi"
@@ -341,7 +362,7 @@ jenkins:
             RequestMemory: "128Mi"
             Args: '${computer.jnlpmac} ${computer.name}'
           Scala:
-            Image: jenkinsxio/builder-scala:0.0.69
+            Image: jenkinsxio/builder-scala:0.0.125
             Privileged: true
             RequestCpu: "400m"
             RequestMemory: "512Mi"
@@ -378,7 +399,7 @@ jenkins:
             RequestMemory: "128Mi"
             Args: '${computer.jnlpmac} ${computer.name}'
           Go:
-            Image: jenkinsxio/builder-go:0.0.245
+            Image: jenkinsxio/builder-go:0.0.301
             Privileged: true
             RequestCpu: "400m"
             RequestMemory: "600Mi"
@@ -415,7 +436,7 @@ jenkins:
             RequestMemory: "128Mi"
             Args: '${computer.jnlpmac} ${computer.name}'
           Terraform:
-            Image: jenkinsxio/builder-terraform:0.0.22
+            Image: jenkinsxio/builder-terraform:0.0.80
             Privileged: true
             RequestCpu: "400m"
             RequestMemory: "600Mi"
@@ -452,7 +473,7 @@ jenkins:
             RequestMemory: "128Mi"
             Args: '${computer.jnlpmac} ${computer.name}'
           Rust:
-            Image: jenkinsxio/builder-rust:0.0.102
+            Image: jenkinsxio/builder-rust:0.0.151
             Privileged: true
             RequestCpu: "400m"
             RequestMemory: "512Mi"
@@ -490,7 +511,7 @@ jenkins:
             RequestMemory: "128Mi"
             Args: '${computer.jnlpmac} ${computer.name}'
           Nodejs:
-            Image: jenkinsxio/builder-nodejs:0.0.200
+            Image: jenkinsxio/builder-nodejs:0.0.254
             Privileged: true
             RequestCpu: "400m"
             RequestMemory: "512Mi"
@@ -527,7 +548,7 @@ jenkins:
             RequestMemory: "128Mi"
             Args: '${computer.jnlpmac} ${computer.name}'
           JX-base:
-            Image: jenkinsxio/builder-base:0.0.281
+            Image: jenkinsxio/builder-base:0.0.342
             Privileged: true
             RequestCpu: "200m"
             RequestMemory: "256Mi"
@@ -565,7 +586,7 @@ jenkins:
             RequestMemory: "128Mi"
             Args: '${computer.jnlpmac} ${computer.name}'
           Python:
-            Image: jenkinsxio/builder-python2:0.0.15
+            Image: jenkinsxio/builder-python2:0.0.74
             Privileged: true
             RequestCpu: "400m"
             RequestMemory: "512Mi"
@@ -603,7 +624,7 @@ jenkins:
             RequestMemory: "128Mi"
             Args: '${computer.jnlpmac} ${computer.name}'
           Python:
-            Image: jenkinsxio/builder-python:0.0.13
+            Image: jenkinsxio/builder-python:0.0.75
             Privileged: true
             RequestCpu: "400m"
             RequestMemory: "512Mi"
@@ -641,7 +662,7 @@ jenkins:
             RequestMemory: "128Mi"
             Args: '${computer.jnlpmac} ${computer.name}'
           Ruby:
-            Image: jenkinsxio/builder-ruby:0.0.281
+            Image: jenkinsxio/builder-ruby:0.0.342
             Privileged: true
             RequestCpu: "400m"
             RequestMemory: "512Mi"
@@ -679,7 +700,7 @@ jenkins:
             RequestMemory: "128Mi"
             Args: '${computer.jnlpmac} ${computer.name}'
           Swift:
-            Image: jenkinsxio/builder-swift:0.0.281
+            Image: jenkinsxio/builder-swift:0.0.342
             Privileged: true
             RequestCpu: "400m"
             RequestMemory: "512Mi"
@@ -696,7 +717,7 @@ jenkins:
     ## Requires Persistence.Enabled: true
     ## If defined, PVC must be created manually before volume will be bound
     # ExistingClaim:
-
+  
     ## jenkins data Persistent Volume Storage Class
     ## If defined, storageClassName: <storageClass>
     ## If set to "-", storageClassName: "", which disables dynamic provisioning
@@ -705,7 +726,7 @@ jenkins:
     ##   GKE, AWS & OpenStack)
     ##
     # StorageClass: "-"
-
+  
     AccessMode: ReadWriteOnce
     Size: 50Gi
     volumes:
@@ -715,14 +736,14 @@ jenkins:
   #  - mountPath: /var/nothing
   #    name: nothing
   #    readOnly: true
-
+  
   NetworkPolicy:
     # Enable creation of NetworkPolicy resources.
     Enabled: false
     # For Kubernetes v1.4, v1.5 and v1.6, use 'extensions/v1beta1'
     # For Kubernetes v1.7, use 'networking.k8s.io/v1'
     ApiVersion: extensions/v1beta1
-
+  
   ## Install Default RBAC roles and bindings
   rbac:
     install: true
@@ -872,6 +893,7 @@ grafana:
     service:
       annotations:
         fabric8.io/expose: "true"
+        fabric8.io/ingress.annotations: "kubernetes.io/ingress.class: nginx"
 
   #  waiting for PR
   # dashboardImports:
