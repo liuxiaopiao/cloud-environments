@@ -105,7 +105,7 @@ monocular:
           fabric8.io/expose: "true"
           fabric8.io/ingress.name: "monocular"
           fabric8.io/ingress.path: "/"
-	mongodb:
+    mongodb:
       global: {}
       image: bitnami/mongodb:3.4.9-r1
       persistence:
